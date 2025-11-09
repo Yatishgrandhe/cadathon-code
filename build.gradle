@@ -1,0 +1,119 @@
+// Java plugin is required to compile Java source code
+plugins {
+    id "java"
+    // WPILib GradleRIO plugin provides FRC-specific build tasks, deployment, and dependency management
+    id "edu.wpi.first.GradleRIO" version "2025.3.2"
+}
+
+// Java 17 is required because WPILib 2025 requires Java 17 or higher for modern language features
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// Main class name is specified here so Gradle knows which class contains the entry point for the robot program
+def ROBOT_MAIN_CLASS = "frc.robot.Main"
+
+// Deploy configuration tells Gradle how to transfer code to the roboRIO during competition
+deploy {
+    targets {
+        // roborio target is configured to deploy to the robot's main processor
+        roborio(getTargetTypeClass('RoboRIO')) {
+            // Team number is read from WPILib preferences to automatically configure network settings
+            team = project.frc.getTeamNumber()
+            // Debug mode enables additional logging and slower execution for troubleshooting
+            debug = project.frc.getDebugOrDefault(false)
+
+            artifacts {
+                // frcJava artifact contains the compiled robot code that runs on the roboRIO
+                frcJava(getArtifactTypeClass('FRCJavaArtifact')) {
+                }
+
+                // Static file deployment allows configuration files to be copied to roboRIO without recompiling
+                frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
+                    files = project.fileTree('src/main/deploy')
+                    // /home/lvuser/deploy is the standard location on roboRIO for deployment files
+                    directory = '/home/lvuser/deploy'
+                    // deleteOldFiles is false to preserve any manually added files on the roboRIO
+                    deleteOldFiles = false
+                }
+            }
+        }
+    }
+}
+
+// deployArtifact variable is stored to reference the jar task later in the build file
+def deployArtifact = deploy.targets.roborio.artifacts.frcJava
+
+// JNI debug is disabled because it's not needed for typical robot operation and slows down execution
+wpi.java.debugJni = false
+
+// Desktop support is enabled to allow running robot code in simulation on a development computer
+def includeDesktopSupport = true
+
+dependencies {
+    // Annotation processor generates code at compile time for WPILib's command-based framework
+    annotationProcessor wpi.java.deps.wpilibAnnotations()
+    // WPILib core library provides robot framework, hardware abstractions, and control algorithms
+    implementation wpi.java.deps.wpilib()
+    // Vendor library includes REV, CTRE, and other vendor-specific motor controller support
+    implementation wpi.java.vendor.java()
+
+    // Debug JNI libraries are included for roboRIO debug builds to enable native code debugging
+    roborioDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.roborio)
+    roborioDebug wpi.java.vendor.jniDebug(wpi.platforms.roborio)
+
+    // Release JNI libraries are optimized versions used in competition for better performance
+    roborioRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.roborio)
+    roborioRelease wpi.java.vendor.jniRelease(wpi.platforms.roborio)
+
+    // Desktop JNI libraries allow robot code to run on Windows/Mac/Linux for simulation and testing
+    nativeDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.desktop)
+    nativeDebug wpi.java.vendor.jniDebug(wpi.platforms.desktop)
+    // Simulation debug enables additional simulation features for development
+    simulationDebug wpi.sim.enableDebug()
+
+    nativeRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.desktop)
+    nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
+    // Simulation release is the optimized version for faster simulation performance
+    simulationRelease wpi.sim.enableRelease()
+
+    // JUnit is included for writing and running unit tests to verify robot code correctness
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// GUI is enabled by default so simulation window appears automatically when running simulation
+wpi.sim.addGui().defaultEnabled = true
+// Driver station simulation allows testing robot code without physical driver station hardware
+wpi.sim.addDriverstation()
+
+// Jar configuration bundles all dependencies and source code into a single deployable file
+jar {
+    // Runtime classpath is included so all required libraries are packaged with the robot code
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    // Source code is included for debugging purposes on the roboRIO
+    from sourceSets.main.allSource
+    // Manifest specifies the main class so Java knows where to start execution
+    manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
+    // Duplicates strategy allows multiple versions of files to coexist, preventing build failures
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+// Deploy artifact is linked to jar task so deployment uses the correctly configured jar file
+deployArtifact.jarTask = jar
+// Executable tasks are configured to ensure jar file can be run as a standalone application
+wpi.java.configureExecutableTasks(jar)
+
+// Test task configuration enables JUnit 5 platform for running unit tests
+tasks.named('test') {
+    useJUnitPlatform()
+    // Autodetection enables automatic discovery of test extensions without manual configuration
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+}
+
+// Compiler arguments are added to optimize string concatenation for better performance
+tasks.withType(JavaCompile) {
+    // String concat optimization inlines string concatenation operations for faster execution
+    options.compilerArgs.add '-XDstringConcat=inline'
+}
