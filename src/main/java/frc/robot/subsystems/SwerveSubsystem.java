@@ -7,6 +7,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -65,7 +66,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private double heading = 0.0;
 
     // NavX gyro is used to get accurate robot heading for field-relative driving
-    private final AHRS gyro = new AHRS(SPI.Port.kMXP);
+    private AHRS gyro;
 
     private SwerveDriveOdometry odometer = new SwerveDriveOdometry(
         swerveDriveKinematics, 
@@ -78,7 +79,21 @@ public class SwerveSubsystem extends SubsystemBase {
         }
     );
     
-    public SwerveSubsystem() {
+    public SwerveSubsystem() {  
+        // Only initialize navX on real robot - skip in simulation due to WPILib 2025 compatibility issues
+        if (RobotBase.isReal()) {
+            try {
+                gyro = new AHRS(SPI.Port.kMXP);
+            } catch (Throwable e) {
+                // Catch Throwable to handle both Exception and Error (like NoSuchMethodError)
+                System.out.println("Warning: navX initialization failed: " + e.getMessage());
+                gyro = null;
+            }
+        } else {
+            // Simulation mode - navX not available due to version incompatibility
+            gyro = null;
+            System.out.println("navX disabled in simulation mode");
+        }
         new Thread(() -> {
             try {
                 Thread.sleep(1000);
@@ -90,11 +105,17 @@ public class SwerveSubsystem extends SubsystemBase {
     
     // ZeroHeading allows driver to reset field-relative coordinate system when robot is aligned with field
     public void ZeroHeading() {
-        gyro.reset();
+        if (gyro != null) {
+            gyro.reset();
+        }
     }
     
     public double getHeading() {
-        return Math.IEEEremainder(gyro.getAngle(), 360.0);
+        if (gyro != null) {
+            return Math.IEEEremainder(gyro.getAngle(), 360.0);
+        }
+        // Return 0.0 in simulation when navX is not available
+        return 0.0;
     }
     
     // getRotation2d converts heading to Rotation2d because WPILib's field-relative functions require Rotation2d type
