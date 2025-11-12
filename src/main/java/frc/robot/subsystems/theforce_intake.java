@@ -10,12 +10,10 @@ public class theforce_intake extends SubsystemBase {
 
   private static final double INTAKE_IN_VOLTS = 3.0;
 
-  private final frc.robot.subsystems.TalonFX motor = new TalonFX();
-
-  private final VoltageOut control = new VoltageOut();
+  private final TalonFX motor = new TalonFX(INTAKE_ID);
 
   private void setMotorPower(double volts) {
-    motor.setControl(control.withOutput(volts));
+    motor.setControl(new VoltageOut(volts));
   }
 
   public Command moveIntakeIn() {

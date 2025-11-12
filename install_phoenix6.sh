@@ -1,0 +1,10 @@
+#!/bin/bash
+echo "To install Phoenix 6 vendor dependency:"
+echo "1. Open VS Code"
+echo "2. Press Cmd+Shift+P (macOS) or Ctrl+Shift+P (Windows/Linux)"
+echo "3. Type 'WPILib: Manage Vendor Libraries' and select it"
+echo "4. Choose 'Install new libraries (online)'"
+echo "5. Select 'Phoenix6' from the list"
+echo "6. Click OK"
+echo ""
+echo "After installation, run: ./gradlew build --refresh-dependencies"
