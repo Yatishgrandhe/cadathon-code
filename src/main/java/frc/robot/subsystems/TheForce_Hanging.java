@@ -16,7 +16,7 @@ public class TheForce_Hanging extends SubsystemBase {
 
     private final TalonFX motor = new TalonFX(INTAKE_ID);
 
-    private void setMotorPower(double volts) {
+    public void setMotorPower(double volts) {
         motor.setControl(new VoltageOut(volts));
     }
 

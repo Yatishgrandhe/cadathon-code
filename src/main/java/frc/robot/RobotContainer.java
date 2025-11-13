@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import java.util.List;
+import frc.robot.commands.HangingCmd;
 
 // RobotContainer centralizes all robot wiring to keep subsystem and command setup organized in one place
 public class RobotContainer {
@@ -44,6 +45,11 @@ public class RobotContainer {
       () -> driverJoystick.getRawAxis(OperatorConstants.DRIVER_JOYSTICK_ROTATION_AXIS), 
       // Button is negated because we want field-oriented when button is NOT pressed (typical joystick behavior)
       () -> !driverJoystick.getRawButton(OperatorConstants.DRIVER_JOYSTICK_FIELD_ORIENTED_BUTTON_INDEX)));
+    hangingSubsystem.setDefaultCommand(new HangingCmd(
+    hangingSubsystem,
+    () -> driverJoystick.getRawButton(3),  // Button 3 for up
+    () -> driverJoystick.getRawButton(4)   // Button 4 for down
+));    
     configureBindings();
   }
 
@@ -51,9 +57,6 @@ public class RobotContainer {
   private void configureBindings() {
     // Button 2 is used for zeroing heading because it's easily accessible and not used for driving
     new JoystickButton(driverJoystick, 2).onTrue(swerveSubsystem.runOnce(() -> swerveSubsystem.ZeroHeading()));
-
-    new JoystickButton(driverJoystick, 3).whileTrue(hangingSubsystem.moveHangingUp());
-    new JoystickButton(driverJoystick, 4).whileTrue(hangingSubsystem.moveHangingDown());
   }
 
   // Returns null because autonomous routine hasn't been implemented yet, but method exists for future use
