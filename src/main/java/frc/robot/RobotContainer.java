@@ -5,6 +5,7 @@ import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.SwerveJoystickCmd;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.TheForce_Hanging;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -25,6 +26,7 @@ import java.util.List;
 public class RobotContainer {
   // Subsystem is created as a field so it persists for the robot's lifetime and can be shared with commands
   private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
+  private final TheForce_Hanging hangingSubsystem = new TheForce_Hanging();
   
   // Joystick is created here to be reused by multiple commands and button bindings
   private final Joystick driverJoystick = new Joystick(OperatorConstants.DRIVER_JOYSTICK_PORT);
@@ -49,6 +51,9 @@ public class RobotContainer {
   private void configureBindings() {
     // Button 2 is used for zeroing heading because it's easily accessible and not used for driving
     new JoystickButton(driverJoystick, 2).onTrue(swerveSubsystem.runOnce(() -> swerveSubsystem.ZeroHeading()));
+
+    new JoystickButton(driverJoystick, 3).whileTrue(hangingSubsystem.moveHangingUp());
+    new JoystickButton(driverJoystick, 4).whileTrue(hangingSubsystem.moveHangingDown());
   }
 
   // Returns null because autonomous routine hasn't been implemented yet, but method exists for future use
@@ -68,6 +73,10 @@ public class RobotContainer {
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
     
     SwerveControllerCommand swervecontrollercommand = new SwerveControllerCommand(trajectory,swerveSubsystem::getPose, DriveConstants.SWERVE_DRIVE_KINEMATICS, xController, yController, thetaController, swerveSubsystem::setModuleStates, swerveSubsystem);
-    return new SequentialCommandGroup(new InstantCommand(()->swerveSubsystem.resetOdometer(trajectory.getInitialPose())), new InstantCommand(()->swerveSubsystem.stopmodules()));
+    return new SequentialCommandGroup(
+        new InstantCommand(()->swerveSubsystem.resetOdometer(trajectory.getInitialPose())),
+        swervecontrollercommand,
+        new InstantCommand(()->swerveSubsystem.stopmodules())
+    );
   }
 }
