@@ -6,6 +6,7 @@ import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.SwerveJoystickCmd;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.TheForce_Hanging;
+import frc.robot.subsystems.ColorWheelSubsystem;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -22,44 +23,47 @@ import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import java.util.List;
 import frc.robot.commands.HangingCmd;
+import frc.robot.commands.RotateColorWheelCmd;
+import frc.robot.commands.GoToColorCmd;
+import frc.robot.subsystems.DetectedColor;
 
-// RobotContainer centralizes all robot wiring to keep subsystem and command setup organized in one place
 public class RobotContainer {
-  // Subsystem is created as a field so it persists for the robot's lifetime and can be shared with commands
   private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
   private final TheForce_Hanging hangingSubsystem = new TheForce_Hanging();
-  
-  // Joystick is created here to be reused by multiple commands and button bindings
+  private final ColorWheelSubsystem colorWheelSubsystem = new ColorWheelSubsystem();
   private final Joystick driverJoystick = new Joystick(OperatorConstants.DRIVER_JOYSTICK_PORT);
   
-  // Constructor sets up default commands and button bindings to ensure robot is ready immediately after creation
   public RobotContainer() {
-    // Default command ensures swerve drive always responds to joystick input, even when no other commands are running
     swerveSubsystem.setDefaultCommand(new SwerveJoystickCmd(
       swerveSubsystem, 
-      // Y axis is negated because joystick forward is typically negative values, but we want forward to be positive
       () -> -driverJoystick.getRawAxis(OperatorConstants.DRIVER_JOYSTICK_Y_AXIS),
-      // X axis uses raw value because joystick coordinate system matches robot coordinate system
       () -> driverJoystick.getRawAxis(OperatorConstants.DRIVER_JOYSTICK_X_AXIS), 
-      // Rotation axis uses raw value for direct control
       () -> driverJoystick.getRawAxis(OperatorConstants.DRIVER_JOYSTICK_ROTATION_AXIS), 
-      // Button is negated because we want field-oriented when button is NOT pressed (typical joystick behavior)
       () -> !driverJoystick.getRawButton(OperatorConstants.DRIVER_JOYSTICK_FIELD_ORIENTED_BUTTON_INDEX)));
     hangingSubsystem.setDefaultCommand(new HangingCmd(
-    hangingSubsystem,
-    () -> driverJoystick.getRawButton(3),  // Button 3 for up
-    () -> driverJoystick.getRawButton(4)   // Button 4 for down
-));    
+        hangingSubsystem,
+        () -> driverJoystick.getRawButton(3),
+        () -> driverJoystick.getRawButton(4),
+        () -> driverJoystick.getRawButton(5),
+        () -> driverJoystick.getRawButton(6),
+        () -> driverJoystick.getRawButton(7),
+        () -> driverJoystick.getRawButton(8)
+    ));    
     configureBindings();
   }
 
-  // Separate method keeps button bindings organized and makes it easy to add more bindings later
   private void configureBindings() {
-    // Button 2 is used for zeroing heading because it's easily accessible and not used for driving
     new JoystickButton(driverJoystick, 2).onTrue(swerveSubsystem.runOnce(() -> swerveSubsystem.ZeroHeading()));
+    new JoystickButton(driverJoystick, 9).onTrue(
+        new RotateColorWheelCmd(colorWheelSubsystem)
+    );
+    
+    // Button 10 = Go to Red (example)
+    new JoystickButton(driverJoystick, 10).onTrue(
+        new GoToColorCmd(colorWheelSubsystem, DetectedColor.RED)
+    );
   }
 
-  // Returns null because autonomous routine hasn't been implemented yet, but method exists for future use
   public Command getAutonomousCommand() {
     TrajectoryConfig trajectoryConfig = new TrajectoryConfig(DriveConstants.AUTO_MAXIMUM_SPEED_METERS_PER_SECOND, DriveConstants.AUTO_MAXIMUM_ACCELERATION_METERS_PER_SECOND_SQUARED).setKinematics(DriveConstants.SWERVE_DRIVE_KINEMATICS);
     

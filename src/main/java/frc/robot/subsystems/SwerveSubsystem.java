@@ -15,9 +15,7 @@ import com.kauailabs.navx.frc.AHRS;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.ModuleConstants;
 
-// SubsystemBase is extended to integrate with WPILib's command-based framework and get periodic callbacks
 public class SwerveSubsystem extends SubsystemBase {
-    // Four modules are created as fields because they need to persist and be accessed throughout the robot's lifetime
     private final SwerveModule frontLeft = new SwerveModule(
         DriveConstants.FRONT_LEFT_DRIVE_MOTOR_PORT,
         DriveConstants.FRONT_LEFT_TURNING_MOTOR_PORT,
@@ -54,7 +52,6 @@ public class SwerveSubsystem extends SubsystemBase {
         DriveConstants.BACK_RIGHT_ABSOLUTE_ENCODER_OFFSET_RADIANS,
         DriveConstants.BACK_RIGHT_ABSOLUTE_ENCODER_PORT);
     
-    // Kinematics object is created here instead of using the constant to allow for potential runtime modifications
     private final SwerveDriveKinematics swerveDriveKinematics = new SwerveDriveKinematics(
         new Translation2d(DriveConstants.WHEEL_BASE_METERS / 2.0, DriveConstants.TRACK_WIDTH_METERS / 2.0),
         new Translation2d(DriveConstants.WHEEL_BASE_METERS / 2.0, -DriveConstants.TRACK_WIDTH_METERS / 2.0),
@@ -62,10 +59,8 @@ public class SwerveSubsystem extends SubsystemBase {
         new Translation2d(-DriveConstants.WHEEL_BASE_METERS / 2.0, -DriveConstants.TRACK_WIDTH_METERS / 2.0)
     );
     
-    // Heading is stored as a simple double because gyro integration hasn't been implemented yet, this is a placeholder
     private double heading = 0.0;
 
-    // NavX gyro is used to get accurate robot heading for field-relative driving
     private AHRS gyro;
 
     private SwerveDriveOdometry odometer = new SwerveDriveOdometry(
@@ -80,17 +75,14 @@ public class SwerveSubsystem extends SubsystemBase {
     );
     
     public SwerveSubsystem() {  
-        // Only initialize navX on real robot - skip in simulation due to WPILib 2025 compatibility issues
         if (RobotBase.isReal()) {
             try {
                 gyro = new AHRS(SPI.Port.kMXP);
             } catch (Throwable e) {
-                // Catch Throwable to handle both Exception and Error (like NoSuchMethodError)
                 System.out.println("Warning: navX initialization failed: " + e.getMessage());
                 gyro = null;
             }
         } else {
-            // Simulation mode - navX not available due to version incompatibility
             gyro = null;
             System.out.println("navX disabled in simulation mode");
         }
@@ -103,7 +95,6 @@ public class SwerveSubsystem extends SubsystemBase {
         }).start();
     }
     
-    // ZeroHeading allows driver to reset field-relative coordinate system when robot is aligned with field
     public void ZeroHeading() {
         if (gyro != null) {
             gyro.reset();
@@ -114,11 +105,9 @@ public class SwerveSubsystem extends SubsystemBase {
         if (gyro != null) {
             return Math.IEEEremainder(gyro.getAngle(), 360.0);
         }
-        // Return 0.0 in simulation when navX is not available
         return 0.0;
     }
     
-    // getRotation2d converts heading to Rotation2d because WPILib's field-relative functions require Rotation2d type
     public Rotation2d getRotation2d() {
         return Rotation2d.fromDegrees(getHeading());
     }
@@ -140,7 +129,6 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     @Override
-    // Periodic runs every robot cycle to update SmartDashboard for driver visibility and debugging
     public void periodic() {
         odometer.update(
             getRotation2d(),
@@ -155,7 +143,6 @@ public class SwerveSubsystem extends SubsystemBase {
         SmartDashboard.putString("Robot Location", getPose().getTranslation().toString());
     }
     
-    // stopmodules is called when robot needs to stop immediately, such as when commands are interrupted
     public void stopmodules() {
         frontLeft.stop();
         frontRight.stop();
@@ -163,11 +150,8 @@ public class SwerveSubsystem extends SubsystemBase {
         backRight.stop();
     }
     
-    // This method is the main interface for driving the robot, converting chassis-level commands to module-level commands
     public void setModuleStates(SwerveModuleState[] moduleStates) {
-        // Desaturation prevents any module from exceeding maximum speed, maintaining proper swerve drive behavior
         SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, ModuleConstants.DRIVE_MOTOR_MAXIMUM_SPEED_METERS_PER_SECOND);
-        // Each module gets its state from the array in the order defined by kinematics (front-left, front-right, back-left, back-right)
         frontLeft.setDesiredState(moduleStates[0]);
         frontRight.setDesiredState(moduleStates[1]);
         backLeft.setDesiredState(moduleStates[2]);

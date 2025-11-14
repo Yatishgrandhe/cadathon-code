@@ -1,6 +1,4 @@
 package frc.robot;
-//ALL OF THESE ARE CONSTANTS FOR THE ROBOT and Will Need to be Changed Based on CAD
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
