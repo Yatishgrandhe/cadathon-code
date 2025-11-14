@@ -5,7 +5,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class TheForce_Intake extends SubsystemBase {
+public class theforce_intake extends SubsystemBase {
   private static final int INTAKE_ID = 9;
 
   private static final double INTAKE_IN_VOLTS = 3.0;
