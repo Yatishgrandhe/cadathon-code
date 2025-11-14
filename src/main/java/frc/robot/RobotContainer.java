@@ -5,6 +5,7 @@ import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.SwerveJoystickCmd;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.TheForce_Hanging;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -20,11 +21,13 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import java.util.List;
+import frc.robot.commands.HangingCmd;
 
 // RobotContainer centralizes all robot wiring to keep subsystem and command setup organized in one place
 public class RobotContainer {
   // Subsystem is created as a field so it persists for the robot's lifetime and can be shared with commands
   private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
+  private final TheForce_Hanging hangingSubsystem = new TheForce_Hanging();
   
   // Joystick is created here to be reused by multiple commands and button bindings
   private final Joystick driverJoystick = new Joystick(OperatorConstants.DRIVER_JOYSTICK_PORT);
@@ -42,6 +45,11 @@ public class RobotContainer {
       () -> driverJoystick.getRawAxis(OperatorConstants.DRIVER_JOYSTICK_ROTATION_AXIS), 
       // Button is negated because we want field-oriented when button is NOT pressed (typical joystick behavior)
       () -> !driverJoystick.getRawButton(OperatorConstants.DRIVER_JOYSTICK_FIELD_ORIENTED_BUTTON_INDEX)));
+    hangingSubsystem.setDefaultCommand(new HangingCmd(
+    hangingSubsystem,
+    () -> driverJoystick.getRawButton(3),  // Button 3 for up
+    () -> driverJoystick.getRawButton(4)   // Button 4 for down
+));    
     configureBindings();
   }
 
@@ -68,6 +76,10 @@ public class RobotContainer {
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
     
     SwerveControllerCommand swervecontrollercommand = new SwerveControllerCommand(trajectory,swerveSubsystem::getPose, DriveConstants.SWERVE_DRIVE_KINEMATICS, xController, yController, thetaController, swerveSubsystem::setModuleStates, swerveSubsystem);
-    return new SequentialCommandGroup(new InstantCommand(()->swerveSubsystem.resetOdometer(trajectory.getInitialPose())), new InstantCommand(()->swerveSubsystem.stopmodules()));
+    return new SequentialCommandGroup(
+        new InstantCommand(()->swerveSubsystem.resetOdometer(trajectory.getInitialPose())),
+        swervecontrollercommand,
+        new InstantCommand(()->swerveSubsystem.stopmodules())
+    );
   }
 }
