@@ -29,7 +29,7 @@ public class TheForce_Shooter extends SubsystemBase {
   public Command shootCmd() {
     return startEnd(
         () -> setShooterVoltage(SHOOT_VOLTS), 
-        () -> setShooterVoltage(0)            
+        () -> setShooterVoltage(3)            
     );
   }
 
